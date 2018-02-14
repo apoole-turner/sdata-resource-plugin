@@ -112,4 +112,4 @@ When this is enabled it will inside of you stub file tell you in which file and 
 ---
 * **Austin Poole** - *Initial work* 
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/apoole-turner/sdata-resource-plugin/graphs/contributors) who participated in this project.
