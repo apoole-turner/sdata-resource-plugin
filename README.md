@@ -108,6 +108,7 @@ When this is enabled it will inside of you stub file tell you in which file and 
 
 
 ### Running Inline
+---
 If don't want to add this to your pom file but would occasionally like to run this plugin you can run these commands in terminal in the root of your project.
 ```
 mvn com.turner.sdata:resource-plugin:1.0.0:envValidate
