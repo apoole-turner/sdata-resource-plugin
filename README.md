@@ -67,9 +67,11 @@ By default this will fail if it finds errors in your workflow.xml
 
 #### envValidate
 Parameters:
+
 | Name        | type  | Default Value  |
 | ------------- |:-------------:| -----:|
 | failOnError| boolean|true |
+
 Checks to ensure that all the environment variables the application is set before the main program starts up. It does this by recursively going through your resource folder for all erb files and collecting all the env variables within. The missing variables are printed out to console.
 
 Ex:
@@ -83,11 +85,12 @@ Ex:
 
 #### generateEnvironmentStub
 Parameters:
-| Name        | type  | Default Value  |
-| ------------- |:-------------:| -----:|
-| stubFileType      | bash  or properties | properties |
-| stubFileName      | String      |   stub |
-| showMetaData      | boolean      |   false |
+
+| Name | type | Default Value  
+--- |--- | ---
+ stubFileType      | bash  or properties | properties 
+ stubFileName      | String      |   stub 
+ showMetaData      | boolean      |   false 
 
 This will generate the stub file inside the root of your project.
 
