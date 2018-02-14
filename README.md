@@ -59,10 +59,13 @@ This contains all the the plugins goals.
 ---
 #### validateWorkflow
 Parameters:
+
 | Name        | type  | Default Value  |
 | ------------- |:-------------:| -----:|
 | workflowFile      | classPath file name | workflow.xml |
 | failOnError      | boolean      |   true |
+
+
 By default this will fail if it finds errors in your workflow.xml
 
 #### envValidate
