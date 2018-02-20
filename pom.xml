@@ -9,6 +9,38 @@
 
 	<name>Sample Parameter-less Maven Plugin</name>
 
+	<repositories>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>turner-libs-releases</id>
+			<name>libs-releases</name>
+			<url>http://maven.turner.com/artifactory/libs-releases</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>turner-libs-releases-local</id>
+			<name>libs-releases-local</name>
+			<url>http://maven.turner.com/artifactory/libs-releases-local</url>
+		</repository>
+		<repository>
+			<snapshots />
+			<id>snapshots</id>
+			<name>libs-snapshots</name>
+			<url>http://maven.turner.com/artifactory/libs-snapshots</url>
+		</repository>
+		<!-- <repository> <snapshots /> <id>repo1-cache</id> <name>repo1-cache</name> 
+			<url>http://maven.turner.com/artifactory/repo1-cache</url> </repository> -->
+		<repository>
+			<snapshots />
+			<id>central</id>
+			<name>central</name>
+			<url>http://repo1.maven.org/maven2/</url>
+		</repository>
+	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.maven</groupId>

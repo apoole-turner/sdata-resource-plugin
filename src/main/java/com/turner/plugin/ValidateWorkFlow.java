@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -45,12 +46,24 @@ public class ValidateWorkFlow extends AbstractMojo {
 	@Parameter(property = "failOnError", required = false, defaultValue = "true")
 	private boolean failOnError;
 	
+	@Parameter(property = "moveCFG", required = false, defaultValue = "true")
+	private boolean moveCFG;
+	
 	private MavenProject project;
 	private BaseFolder baseFolder;
 	@Override
 	public void execute() throws MojoExecutionException {
 		
 		project = (MavenProject) getPluginContext().get("project");
+		if(moveCFG) {
+			Resource resource=new Resource();
+			resource.setDirectory(project.getBasedir().getAbsolutePath()+"/cfg");// Add cfg to resource folder
+			resource.setTargetPath("cfg/");
+			Resource resource2=new Resource();
+			resource2.setDirectory(project.getBasedir().getAbsolutePath()+"/cfg");// Add cfg to resource folder
+			project.addResource(resource2);
+			project.addResource(resource);
+		}
 		baseFolder=new BaseFolder(project);
 		
 		Path tempDir=null;
@@ -94,7 +107,8 @@ public class ValidateWorkFlow extends AbstractMojo {
 		} catch (Exception e) {
 			throw new MojoExecutionException("ValidateWorkFlow plugin failed to execute", e);
 		}finally {
-			baseFolder.cleanUp();
+			getLog().info(baseFolder.getTempPath().toString());
+			//baseFolder.cleanUp();
 		}
 		if(failOnError && errorMsg.size()>0)
 			throw new MojoExecutionException("Errors exist in the workflow and failOnError enabled");

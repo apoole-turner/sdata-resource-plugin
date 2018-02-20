@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
+import java.util.List;
 
+import org.apache.maven.model.Resource;
 import org.apache.maven.project.MavenProject;
 
 public class BaseFolder {
@@ -22,7 +24,15 @@ public class BaseFolder {
 	public final Path createTempResources() throws IOException {
 		//System.out.println(System.getProperty("java.io.tmpdir"));
 		tempPath=Files.createTempDirectory("build");
-		copyDir(project.getBuild().getOutputDirectory(),tempPath.toAbsolutePath().toString(),true);
+		List<Resource> resources=project.getResources();
+		for(Resource resource: resources) {
+			
+			Path veryTemp=tempPath.toAbsolutePath();
+			if(resource.getTargetPath()!=null)
+				veryTemp=veryTemp.resolve(resource.getTargetPath());
+			if(Files.exists(Paths.get(resource.getDirectory())))
+				copyDir(resource.getDirectory(),veryTemp.toAbsolutePath().toString(),true);
+		}
 		return tempPath;
 	}
 	public  void cleanUp()  {
@@ -44,7 +54,8 @@ public class BaseFolder {
 	                if (!a.toString().equals(src)) {
 	                		if(!Files.exists(b.getParent()))
 	                			Files.createDirectories(b.getParent());
-	                    Files.copy(a, b, overwrite ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.COPY_ATTRIBUTES} : new CopyOption[]{});
+	                		
+	                		Files.copy(a, b, overwrite ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.COPY_ATTRIBUTES} : new CopyOption[]{});
 	                }
                 } catch (IOException e) {
                 e.printStackTrace();
