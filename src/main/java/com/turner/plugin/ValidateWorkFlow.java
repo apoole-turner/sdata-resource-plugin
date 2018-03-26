@@ -34,6 +34,7 @@ import org.w3c.dom.NodeList;
 import com.turner.helpers.BaseFolder;
 import com.turner.helpers.ErbReplace;
 import com.turner.helpers.ImportXiIncludeFiles;
+import com.turner.helpers.ResourceUtil;
 
 @Mojo(name = "validateWorkflow", defaultPhase = LifecyclePhase.COMPILE)
 public class ValidateWorkFlow extends AbstractMojo {
@@ -46,8 +47,9 @@ public class ValidateWorkFlow extends AbstractMojo {
 	@Parameter(property = "failOnError", required = false, defaultValue = "true")
 	private boolean failOnError;
 	
-	@Parameter(property = "moveCFG", required = false, defaultValue = "true")
-	private boolean moveCFG;
+
+	@Parameter(property = "resourceJson", required = false)
+	private String resourceJson;
 	
 	private MavenProject project;
 	private BaseFolder baseFolder;
@@ -55,14 +57,8 @@ public class ValidateWorkFlow extends AbstractMojo {
 	public void execute() throws MojoExecutionException {
 		
 		project = (MavenProject) getPluginContext().get("project");
-		if(moveCFG) {
-			Resource resource=new Resource();
-			resource.setDirectory(project.getBasedir().getAbsolutePath()+"/cfg");// Add cfg to resource folder
-			resource.setTargetPath("cfg/");
-			Resource resource2=new Resource();
-			resource2.setDirectory(project.getBasedir().getAbsolutePath()+"/cfg");// Add cfg to resource folder
-			project.addResource(resource2);
-			project.addResource(resource);
+		if(resourceJson!=null) {
+			ResourceUtil.setAdditionalResourceFolder(resourceJson, project);
 		}
 		baseFolder=new BaseFolder(project);
 		
@@ -105,7 +101,10 @@ public class ValidateWorkFlow extends AbstractMojo {
 
 			}
 		} catch (Exception e) {
-			throw new MojoExecutionException("ValidateWorkFlow plugin failed to execute", e);
+			if(failOnError)
+				throw new MojoExecutionException("ValidateWorkFlow plugin failed to execute", e);
+			else
+				e.printStackTrace();
 		}finally {
 			getLog().info(baseFolder.getTempPath().toString());
 			//baseFolder.cleanUp();

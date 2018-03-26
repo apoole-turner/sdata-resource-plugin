@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -31,6 +32,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import com.turner.helpers.PropertyCheck;
+import com.turner.helpers.ResourceUtil;
 
 @Mojo(name = "generateEnvironmentStub", defaultPhase = LifecyclePhase.COMPILE)
 public class GenerateEnvironmentVariables extends AbstractMojo {
@@ -47,9 +49,13 @@ public class GenerateEnvironmentVariables extends AbstractMojo {
 	private Map<String, Set<PropertyCheck>> knownEnvMapSet;
 	private Map<String, List<PropertyCheck>> knownEnvMapList;
 	private MavenProject project;
-
+	@Parameter(property = "resourceJson", required = false)
+	private String resourceJson;
 	public void execute() throws MojoExecutionException {
 		project = (MavenProject) getPluginContext().get("project");
+		if (resourceJson != null) {
+			ResourceUtil.setAdditionalResourceFolder(resourceJson, project);
+		}
 		if (stubFileType.equalsIgnoreCase("bash")) {
 			stubFileNameAb = project.getBasedir().getAbsolutePath() + "/" + stubFileName + ".sh";
 		} else {
@@ -58,9 +64,13 @@ public class GenerateEnvironmentVariables extends AbstractMojo {
 
 		knownEnvMapSet = new HashMap<>();
 		knownEnvMapList = new HashMap<>();
-		List<String> list = erbFiles();
-
-		for (String str : list) {
+		List<Resource> projectResources = project.getResources();
+		List<String> erbList = new ArrayList<>();
+		for (Resource resource : projectResources) {
+			if (resource.getDirectory() != null)
+				erbList.addAll(ResourceUtil.getErbFiles(Paths.get(resource.getDirectory())));
+		}
+		for (String str : erbList) {
 			readFiles(str);
 		}
 		getLog().info("--------------------------------------");
@@ -122,24 +132,8 @@ public class GenerateEnvironmentVariables extends AbstractMojo {
 		return env;
 	}
 
-	private List<String> erbFiles() throws MojoExecutionException {
-		// project.
-		Path resourcePath = Paths.get(project.getBuild().getOutputDirectory());
-		Function<Path, String> shortenPath = (path) -> {
-			return path.toAbsolutePath().toString();
-		};
+	
 
-		try {
-
-			Stream<Path> stream = Files.walk(resourcePath).sorted(Collections.reverseOrder())
-					.filter((pathz) -> pathz.toString().toLowerCase().endsWith(".erb")
-							|| pathz.getFileName().toString().toLowerCase().startsWith("erb."));
-			return stream.map(shortenPath).collect(Collectors.toList());
-		} catch (IOException e) {
-			throw new MojoExecutionException("Couldn't use Files.walk on base classpath", e);
-		}
-
-	}
 
 	private void readFiles(String fileName) throws MojoExecutionException {
 		try (BufferedReader in = new BufferedReader(new FileReader(fileName));) {

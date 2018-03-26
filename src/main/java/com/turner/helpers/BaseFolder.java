@@ -21,6 +21,10 @@ public class BaseFolder {
 		
 		this.project=project;
 	}
+	public static void main(String[] args) {
+		Path path=Paths.get("/house");
+		
+	}
 	public final Path createTempResources() throws IOException {
 		//System.out.println(System.getProperty("java.io.tmpdir"));
 		tempPath=Files.createTempDirectory("build");

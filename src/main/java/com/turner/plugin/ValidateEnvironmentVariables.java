@@ -17,65 +17,65 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
-import com.turner.helpers.BaseFolder;
 import com.turner.helpers.PropertyCheck;
+import com.turner.helpers.ResourceUtil;
 
 @Mojo(name = "envValidate", defaultPhase = LifecyclePhase.COMPILE)
 public class ValidateEnvironmentVariables extends AbstractMojo {
 	@Parameter(name = "failOnError", required = false, defaultValue = "true")
 	private boolean failOnError;
+
+	@Parameter(property = "resourceJson", required = false)
+	private String resourceJson;
+
 	private Set<PropertyCheck> unknownEnvList;
 	private MavenProject project;
-	private BaseFolder baseFolder;
 
 	public void execute() throws MojoExecutionException {
-		project = (MavenProject) getPluginContext().get("project");
-		baseFolder = new BaseFolder(project);
 		try {
-			baseFolder.createTempResources();
-		} catch (IOException e) {
-			throw new MojoExecutionException("Couldn't create temp directory", e);
-		}
-		unknownEnvList = new HashSet<>();
-		List<String> list = erbFiles();
-		getLog().info(list.size() + "");
-		for (String str : list) {
-			readFiles(str);
-		}
+			project = (MavenProject) getPluginContext().get("project");
+			if (resourceJson != null) {
+				ResourceUtil.setAdditionalResourceFolder(resourceJson, project);
+			}
+			unknownEnvList = new HashSet<>();
+			List<Resource> projectResources = project.getResources();
 
-		getLog().info("Checking for Missing Variables ");
-		getLog().info("--------------------------------------");
-		Set<String> printedAlready=new HashSet<>();
-		for (PropertyCheck unknown : unknownEnvList) {
-			if(!printedAlready.contains(unknown.getProperty()))
-				getLog().warn("Missing Property: " + unknown.getProperty());
-			printedAlready.add(unknown.getProperty());
-		}
-		if(failOnError && unknownEnvList.size()>0)
-			throw new MojoExecutionException("Missing environment variables");
-		getLog().info("--------------------------------------");
-	}
+			List<String> erbList = new ArrayList<>();
+			for (Resource resource : projectResources) {
+				if (resource.getDirectory() != null)
+					erbList.addAll(ResourceUtil.getErbFiles(Paths.get(resource.getDirectory())));
+			}
+			getLog().info("Number of erb files: " + erbList.size() + "");
+			for (String str : erbList) {
+				readFiles(str);
+			}
 
-	private List<String> erbFiles() throws MojoExecutionException {
-		Path resourcePath = baseFolder.getTempPath();
-		Function<Path, String> shortenPath = (path) -> {
-			return path.toString();
-		};
-		try {
-			Stream<Path> stream = Files.walk(resourcePath).sorted(Collections.reverseOrder())
-					.filter((pathz) -> pathz.toString().toLowerCase().endsWith(".erb"));
-			return stream.map(shortenPath).collect(Collectors.toList());
-		} catch (IOException e) {
-			throw new MojoExecutionException("Couldn't use Files.walk on base classpath", e);
+			getLog().info("Checking for Missing Variables ");
+			getLog().info("--------------------------------------");
+			Set<String> printedAlready = new HashSet<>();
+			for (PropertyCheck unknown : unknownEnvList) {
+				if (!printedAlready.contains(unknown.getProperty()))
+					getLog().warn("Missing Property: " + unknown.getProperty());
+				printedAlready.add(unknown.getProperty());
+			}
+			if (failOnError && unknownEnvList.size() > 0)
+				throw new MojoExecutionException("Missing environment variables");
+			getLog().info("--------------------------------------");
+		} catch (Exception e) {
+			if (failOnError)
+				throw new MojoExecutionException("error occured", e);
+			else
+				e.printStackTrace();
 		}
-
 	}
 
 	private void readFiles(String fileName) throws MojoExecutionException {
@@ -95,7 +95,7 @@ public class ValidateEnvironmentVariables extends AbstractMojo {
 						String patStr = line.substring(start, end);
 						String patName = patStr.substring(3, patStr.length() - 2).trim().substring(1);
 						Boolean isMissing = System.getenv(patName) == null;
-						if (isMissing )
+						if (isMissing)
 							this.unknownEnvList.add(new PropertyCheck(fileName, patName, lineNumber));
 
 						line = line.replace(patStr, "");

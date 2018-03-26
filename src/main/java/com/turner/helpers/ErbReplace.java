@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,8 +52,10 @@ public class ErbReplace {
 	
 	
 	public static  void replaceERB(Path pathToResources) throws MojoExecutionException {
-
-		List<Path> list = erbFiles(pathToResources);
+		Function<String, Path> toPath = (path) -> {
+			return Paths.get(path);
+		};
+		List<Path> list = ResourceUtil.getErbFiles(pathToResources).stream().map(toPath).collect(Collectors.toList());
 		for (Path path : list) {
 			String erbFile = path.toAbsolutePath().toString();
 			String newFile ="";
@@ -67,16 +70,5 @@ public class ErbReplace {
 		}
 	}
 
-	private static List<Path> erbFiles(Path path) throws MojoExecutionException {
-		try {
-			//Files.walk(path).forEach(System.out::println);;
-			Stream<Path> stream = Files.walk(path).sorted(Collections.reverseOrder())
-					.filter((pathz) -> pathz.toString().toLowerCase().endsWith(".erb") ||  pathz.getFileName().toString().toLowerCase().startsWith("erb.") );
-			
-			return stream.collect(Collectors.toList());
-		} catch (IOException e) {
-			throw new MojoExecutionException("",e);
-		}
 
-	}
 }
