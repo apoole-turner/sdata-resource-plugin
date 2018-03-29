@@ -11,7 +11,7 @@ Add to your pom.xml inside the build section
         <plugin>
         	<groupId>com.turner.sdata</groupId>
         	<artifactId>resource-plugin</artifactId>
-        	<version>1.0.2</version>
+        	<version>1.0.4</version>
         	<executions>
         		<execution>
         			<id>validateWorkflow</id>

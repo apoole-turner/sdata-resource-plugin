@@ -51,7 +51,7 @@ public class BaseFolder {
 	}
 	private static void copyDir(String src, String dest, boolean overwrite) {
 	    try {
-	        Files.walk(Paths.get(src)).forEach(a -> {
+	        Files.walk(Paths.get(src)).sorted().forEach(a -> {
 	            Path b = Paths.get(dest, a.toString().substring(src.length()));
 	            try {
 	           
@@ -62,7 +62,7 @@ public class BaseFolder {
 	                		Files.copy(a, b, overwrite ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.COPY_ATTRIBUTES} : new CopyOption[]{});
 	                }
                 } catch (IOException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
 	            }
 	        });
 	    } catch (IOException e) {

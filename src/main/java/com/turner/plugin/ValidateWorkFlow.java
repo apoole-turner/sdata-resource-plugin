@@ -9,17 +9,17 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -46,33 +46,31 @@ public class ValidateWorkFlow extends AbstractMojo {
 
 	@Parameter(property = "failOnError", required = false, defaultValue = "true")
 	private boolean failOnError;
-	
 
 	@Parameter(property = "resourceJson", required = false)
 	private String resourceJson;
-	
+
 	private MavenProject project;
 	private BaseFolder baseFolder;
+
 	@Override
 	public void execute() throws MojoExecutionException {
-		
 		project = (MavenProject) getPluginContext().get("project");
-		if(resourceJson!=null) {
+		if (resourceJson != null) {
 			ResourceUtil.setAdditionalResourceFolder(resourceJson, project);
 		}
-		baseFolder=new BaseFolder(project);
-		
-		Path tempDir=null;
+		baseFolder = new BaseFolder(project);
+
+		Path tempDir = null;
 		try {
-			tempDir=baseFolder.createTempResources();
+			tempDir = baseFolder.createTempResources();
 		} catch (IOException e1) {
-			throw new MojoExecutionException("couldn't create temp directory",e1);
+			throw new MojoExecutionException("couldn't create temp directory", e1);
 		}
 		try {
 			ErbReplace.replaceERB(tempDir);
 			ImportXiIncludeFiles include = new ImportXiIncludeFiles();
-			Document doc = include.createCombinedWorkflowFile(tempDir.toAbsolutePath().toString(),
-					this.workflowFile);
+			Document doc = include.createCombinedWorkflowFile(tempDir.toAbsolutePath().toString(), this.workflowFile);
 
 			NodeList actionNodes = doc.getElementsByTagName("action");
 			List<ActionRoot> actions = new ArrayList<>();
@@ -89,11 +87,11 @@ public class ValidateWorkFlow extends AbstractMojo {
 			checkRepeatedActionName(actions);
 			checkLoadableClasses(actions);
 			checkSuccessActions(actions);
-			if(errorMsg.size()>0) {
+			if (errorMsg.size() > 0) {
 				getLog().error("--------------------------------------");
-				getLog().error(this.workflowFile+" Errors");
+				getLog().error(this.workflowFile + " Errors");
 				getLog().error("--------------------------------------");
-				for(String error:errorMsg)
+				for (String error : errorMsg)
 					getLog().info(error);
 				getLog().error("--------------------------------------");
 				getLog().error("Errors End");
@@ -101,15 +99,15 @@ public class ValidateWorkFlow extends AbstractMojo {
 
 			}
 		} catch (Exception e) {
-			if(failOnError)
+			if (failOnError)
 				throw new MojoExecutionException("ValidateWorkFlow plugin failed to execute", e);
 			else
 				e.printStackTrace();
-		}finally {
+		} finally {
 			getLog().info(baseFolder.getTempPath().toString());
-			//baseFolder.cleanUp();
+			baseFolder.cleanUp();
 		}
-		if(failOnError && errorMsg.size()>0)
+		if (failOnError && errorMsg.size() > 0)
 			throw new MojoExecutionException("Errors exist in the workflow and failOnError enabled");
 
 	}
@@ -136,12 +134,12 @@ public class ValidateWorkFlow extends AbstractMojo {
 		childAc.setElement(el);
 		childAc.setFailNode(el.getTagName().equalsIgnoreCase("failure"));
 		if (!hasAction(actionRootList, name)) {
-			String prepend="";
-			if(childAc.isFailNode) {
-				prepend="Failue";
-			}else
-				prepend="Success";
-			String msg = prepend+" Action is missing " + childAc.getAuditTrail();
+			String prepend = "";
+			if (childAc.isFailNode) {
+				prepend = "Failue";
+			} else
+				prepend = "Success";
+			String msg = prepend + " Action is missing " + childAc.getAuditTrail();
 			errorMsg.add(msg);
 		}
 		return childAc;
@@ -183,39 +181,75 @@ public class ValidateWorkFlow extends AbstractMojo {
 		List<String> classes = GetDependenciesClasses(artifactList);
 		List<String> sourceClasses = getJavaSourceClasses();
 		classes.addAll(sourceClasses);
+
 		for (ActionRoot ar : actions) {
 			if (!classes.contains(ar.getClazz())) {
-				String msg = "Class:" + ar.getClazz() + " is not in the classPath";
+				String msg = "Class:" + ar.getClazz() + " is not in the classPath for action:" + ar.getName();
 				errorMsg.add(msg);
 			}
 		}
 
 	}
 
-	@SuppressWarnings("rawtypes")
 	public List<String> GetDependenciesClasses(List<Artifact> arts) throws IOException, ClassNotFoundException {
 		List<String> classes = new ArrayList<>();
+		Set<String> localRepos = GetLocalRepos(arts);
 		for (Artifact art : arts) {
-			if (!art.getScope().equals(Artifact.SCOPE_COMPILE))
+			if (!art.getScope().equals(Artifact.SCOPE_COMPILE) && !art.getScope().equals(Artifact.SCOPE_RUNTIME))
 				continue;
-			String pathToJar = null;
-				pathToJar = art.getFile().getAbsolutePath();	
-			try (JarFile jarFile = new JarFile(art.getFile())) {
-				Enumeration<JarEntry> e = jarFile.entries();
-				URL[] urls = { new URL("jar:file:" + pathToJar + "!/") };
-				URLClassLoader cl = URLClassLoader.newInstance(urls);
-				while (e.hasMoreElements()) {
-					JarEntry je = e.nextElement();
-					if (je.isDirectory() || !je.getName().endsWith(".class")) {
-						continue;
+			try {
+				String pathToJar = getPathToJar(localRepos, art);
+				;
+				// pathToJar = art.getFile().getAbsolutePath();
+				try (JarFile jarFile = new JarFile(pathToJar)) {
+					Enumeration<JarEntry> e = jarFile.entries();
+					URL[] urls = { new URL("jar:file:" + pathToJar + "!/") };
+					URLClassLoader cl = URLClassLoader.newInstance(urls);
+					while (e.hasMoreElements()) {
+						JarEntry je = e.nextElement();
+						if (je.isDirectory() || !je.getName().endsWith(".class")) {
+							continue;
+						}
+						String className = je.getName().substring(0, je.getName().length() - 6);
+						className = className.replace('/', '.');
+						classes.add(className);
 					}
-					String className = je.getName().substring(0, je.getName().length() - 6);
-					className = className.replace('/', '.');
-					classes.add(className);
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 		return classes;
+
+	}
+
+	private String getPathToJar(Set<String> localRepos, Artifact art) {
+		if (art.getScope().equals(Artifact.SCOPE_COMPILE)) {
+			return art.getFile().getAbsolutePath();
+		} else if (art.getScope().equals(Artifact.SCOPE_RUNTIME)) {
+			for (String localRepo : localRepos) {
+				String parentFolder = localRepo + art.getGroupId().replace(".", "/") + "/" + art.getArtifactId() + "/"
+						+ art.getVersion();
+				String fileName=art.getArtifactId()+"-"+art.getVersion()+".jar";
+				return parentFolder+"/"+fileName;
+			}
+		}
+		return null;
+	}
+
+	public Set<String> GetLocalRepos(List<Artifact> arts) {
+		Set<String> set = new HashSet<>();
+		for (Artifact art : arts) {
+			if (art.getScope().equals(Artifact.SCOPE_COMPILE)) {
+				Path path = Paths.get(art.getFile().getAbsolutePath());
+
+				String removal = art.getGroupId().replace(".", "/") + "/" + art.getArtifactId() + "/"
+						+ art.getVersion();
+				String localRepo = path.getParent().toAbsolutePath().toString().replace(removal, "");
+				set.add(localRepo);
+			}
+		}
+		return set;
 	}
 
 	public List<String> getJavaSourceClasses() throws IOException {
@@ -249,10 +283,10 @@ public class ValidateWorkFlow extends AbstractMojo {
 		}
 		for (Entry<String, Integer> entry : actionNamesCount.entrySet()) {
 			if (entry.getValue() > 0) {
-				String s="";
-				if(entry.getValue()==1)
-					s="s";
-				String msg = "Action: " + entry.getKey() + " is repeats " + entry.getValue() + " time"+s;
+				String s = "";
+				if (entry.getValue() == 1)
+					s = "s";
+				String msg = "Action: " + entry.getKey() + " is repeats " + entry.getValue() + " time" + s;
 				errorMsg.add(msg);
 			}
 		}

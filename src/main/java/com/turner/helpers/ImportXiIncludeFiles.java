@@ -76,7 +76,6 @@ public class ImportXiIncludeFiles {
 		for (int i = 0; i < nodelist.getLength(); i++) {
 			Element el = (Element) nodelist.item(i);
 			String s = el.getAttribute("href");
-			System.out.println(s);
 			DocLink docLink = new DocLink();
 
 			docLink.setParent(docParent);
