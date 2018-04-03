@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -36,12 +37,19 @@ public class ValidateEnvironmentVariables extends AbstractMojo {
 
 	@Parameter(property = "resourceJson", required = false)
 	private String resourceJson;
-
+	
+	@Parameter(property = "ignoredEnvArr", required = false)
+	private String[] ignoredEnvArr;
+	
+	private List<String> ignoreEnvList;
 	private Set<PropertyCheck> unknownEnvList;
 	private MavenProject project;
 
 	public void execute() throws MojoExecutionException {
 		try {
+			if(ignoredEnvArr!=null) {
+				ignoreEnvList=Arrays.asList(ignoredEnvArr);
+			}
 			project = (MavenProject) getPluginContext().get("project");
 			if (resourceJson != null) {
 				ResourceUtil.setAdditionalResourceFolder(resourceJson, project);
@@ -95,7 +103,10 @@ public class ValidateEnvironmentVariables extends AbstractMojo {
 						String patStr = line.substring(start, end);
 						String patName = patStr.substring(3, patStr.length() - 2).trim().substring(1);
 						Boolean isMissing = System.getenv(patName) == null;
-						if (isMissing)
+						boolean isIgnored = false;
+						if(ignoreEnvList!=null)
+							isIgnored=ignoreEnvList.contains(patName);
+						if (isMissing && !isIgnored)
 							this.unknownEnvList.add(new PropertyCheck(fileName, patName, lineNumber));
 
 						line = line.replace(patStr, "");

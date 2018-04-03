@@ -11,7 +11,7 @@ Add to your pom.xml inside the build section
         <plugin>
         	<groupId>com.turner.sdata</groupId>
         	<artifactId>resource-plugin</artifactId>
-        	<version>1.0.4</version>
+        	<version>1.0.6</version>
         	<executions>
         		<execution>
         			<id>validateWorkflow</id>
@@ -36,6 +36,9 @@ Add to your pom.xml inside the build section
         			    <resourceJson>
 		                    [{"cfg":"cfg","webapp":"webapp"},{"cfg":"null"}]
 	                    </resourceJson>
+	                    <ignoredEnvArr>
+							BROKER_URL,SHOW_SQL,DB_CONNECTION_DATABASE,DB_DRIVER,LOCAL_IP
+						</ignoredEnvArr>
         				<failOnError>false</failOnError>
         			</configuration>
         		</execution>
@@ -94,14 +97,18 @@ Parameters:
 | ------------- |:-------------:| -----:|
 | failOnError| boolean|true |
 | resourceJson     | String | null |
-
+| ignoredEnvArr | String | null |
 
 Checks to ensure that all the environment variables the application is set before the main program starts up. It does this by recursively going through your resource folder for all erb files and collecting all the env variables within. The missing variables are printed out to console.
 
 **resourceJson**
 See validateWorkflow for description.
 
-Ex:
+**ignoredEnvArr**
+This will ignore certain environment variables such as LOCAL_IP. 
+It expects a comma delimited String as an arguement
+
+Example of output:
 ```
 [WARNING] Missing Property: LOG4J_APPENDER
 [WARNING] Missing Property: ENVIRONMENT

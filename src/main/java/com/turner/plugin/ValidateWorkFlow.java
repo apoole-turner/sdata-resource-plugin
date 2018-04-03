@@ -88,14 +88,14 @@ public class ValidateWorkFlow extends AbstractMojo {
 			checkLoadableClasses(actions);
 			checkSuccessActions(actions);
 			if (errorMsg.size() > 0) {
-				getLog().error("--------------------------------------");
-				getLog().error(this.workflowFile + " Errors");
-				getLog().error("--------------------------------------");
+				getLog().warn("--------------------------------------");
+				getLog().warn(this.workflowFile + " Errors");
+				getLog().warn("--------------------------------------");
 				for (String error : errorMsg)
-					getLog().info(error);
-				getLog().error("--------------------------------------");
-				getLog().error("Errors End");
-				getLog().error("--------------------------------------");
+					getLog().warn(error);
+				getLog().warn("--------------------------------------");
+				getLog().warn("Errors End");
+				getLog().warn("--------------------------------------");
 
 			}
 		} catch (Exception e) {

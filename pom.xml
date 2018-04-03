@@ -4,7 +4,7 @@
 
 	<groupId>com.turner.sdata</groupId>
 	<artifactId>resource-plugin</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.6</version>
 	<packaging>maven-plugin</packaging>
 
 	<name>Sample Parameter-less Maven Plugin</name>
